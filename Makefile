@@ -2,6 +2,7 @@
 
 # Default value for NUM_CITIES
 NUM_CITIES ?= 100
+NUM_ANTS ?= 10
 
 # Define variables
 SOURCE_CUDA := /opt/nfs/config/source_cuda121.sh
@@ -11,7 +12,7 @@ NODES_FILE := nodes
 
 # Define targets
 all: main generate_data
-	mpiexec -f $(NODES_FILE) -n $$(($(shell cat $(NODES_FILE) | wc -l) * 2)) ./main
+	mpiexec -f $(NODES_FILE) -n $$(($(shell cat $(NODES_FILE) | wc -l) * 2)) ./main $(NUM_ANTS)
 	python3 plot.py
 
 main: main.c

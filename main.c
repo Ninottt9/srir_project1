@@ -7,8 +7,8 @@
 #include <mpi.h>
 
 // Define structures and global variables here
-#define MAX_CITIES 1000 // Maximum number of cities
-#define MAX_ANTS 100    // Maximum number of ants
+#define MAX_CITIES 10000 // Maximum number of cities
+#define MAX_ANTS 1000    // Maximum number of ants
 #define MAX_REPEAT_COUNT 10
 
 // Define structures
@@ -29,8 +29,8 @@ double pheromones[MAX_CITIES][MAX_CITIES]; // Pheromone trails
 City *cities;                              // Array to hold cities
 Ant ants[MAX_ANTS];                        // Array to hold ants
 
-int num_cities = 100; // Number of cities
-int num_ants = 10;    // Number of ants
+int num_cities = 100; // fallvack value
+int num_ants = 10;    // fallback value
 
 // Constants for ACO parameters
 #define ALPHA 1.0 // Pheromone importance
@@ -57,6 +57,12 @@ int repeat_count = 0;
 
 int main(int argc, char *argv[])
 {
+    if (argc != 2)
+    {
+        printf("Usage: %s <num_ants>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+    num_ants = atoi(argv[1]);
     int rank, size;
     double start_time, end_time;
 
@@ -95,7 +101,9 @@ int main(int argc, char *argv[])
         if (prev_best_tour_length - best_tour_length < 1e-6)
         {
             repeat_count++;
-        } else {
+        }
+        else
+        {
             prev_best_tour_length = best_tour_length;
         }
 
