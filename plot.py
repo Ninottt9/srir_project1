@@ -30,6 +30,6 @@ plt.legend()
 plt.grid(True)
 
 # Save the plot to a file
-plt.savefig("output.png")
-
-print("Best tour length:", best_tour_length)
+fileName = 'output.png'
+plt.savefig(fileName)
+print('plot saved to the', fileName)

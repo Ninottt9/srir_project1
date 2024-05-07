@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
         }
 
         // Print intermediate output (optional)
-        if (rank == 0 && iteration % 10 == 0)
+        if (rank == 0 && iteration % 100 == 0)
         {
             printf("Iteration %d: Best tour length so far: %.2f\n", iteration, best_tour_length);
         }
