@@ -1,16 +1,6 @@
-## Prepare data
-`python3 generate_cities.py number_of_cities`
+## Run
+- `make` to activate cuda and mpich, generate nodes file, to prepare the data, compile the code and run it.
+- `make <number_of_cities>` to specify the number of cities, that should be generated, default is **100**
+- `make all` to run the code with the default number of cities and plot the results
 
-## Before compilation
-- `source /opt/nfs/config/source_cuda121.sh`
-- `source /opt/nfs/config/source_mpich420.sh`
-- `/opt/nfs/config/station204_name_list.sh 1 16 > nodes`
-
-## Compile
-`mpicc main.c -lm -o main`
-
-## RUN
-`mpiexec -f nodes -n $(( 2 * $(cat nodes | wc -l) )) ./main`
-
-## Plot results
-`python3 plot.py`
+etc.

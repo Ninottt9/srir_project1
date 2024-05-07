@@ -9,6 +9,7 @@
 // Define structures and global variables here
 #define MAX_CITIES 1000 // Maximum number of cities
 #define MAX_ANTS 100    // Maximum number of ants
+#define MAX_REPEAT_COUNT 10
 
 // Define structures
 typedef struct
@@ -25,7 +26,7 @@ typedef struct
 } Ant;
 
 double pheromones[MAX_CITIES][MAX_CITIES]; // Pheromone trails
-City *cities;                   // Array to hold cities
+City *cities;                              // Array to hold cities
 Ant ants[MAX_ANTS];                        // Array to hold ants
 
 int num_cities = 100; // Number of cities
@@ -52,6 +53,7 @@ const int max_iterations = 1000; // Maximum number of iterations (adjust as need
 
 // Define a global variable to store the best tour length found so far
 double best_tour_length = DBL_MAX;
+int repeat_count = 0;
 
 int main(int argc, char *argv[])
 {
@@ -69,7 +71,7 @@ int main(int argc, char *argv[])
     start_time = MPI_Wtime();
 
     // Main loop of ACO algorithm
-    while (!termination_condition_met())
+    while (true)
     {
         // Simulate ant movement
         ant_movement();
@@ -81,12 +83,20 @@ int main(int argc, char *argv[])
         communicate();
 
         // Update best tour length found so far
+        double prev_best_tour_length = best_tour_length;
         for (int i = 0; i < num_ants; i++)
         {
             if (ants[i].tour_length < best_tour_length)
             {
                 best_tour_length = ants[i].tour_length;
             }
+        }
+
+        if (prev_best_tour_length - best_tour_length < 1e-6)
+        {
+            repeat_count++;
+        } else {
+            prev_best_tour_length = best_tour_length;
         }
 
         // Print intermediate output (optional)
@@ -108,16 +118,6 @@ int main(int argc, char *argv[])
     if (rank == 0)
     {
         printf("Best tour found:\n");
-        // Print the best tour found by the ants
-        for (int i = 0; i < num_ants; i++)
-        {
-            printf("Ant %d's tour: ", i);
-            for (int j = 0; j < num_cities; j++)
-            {
-                printf("%d ", ants[i].tour[j]);
-            }
-            printf("Tour length: %.2f\n", ants[i].tour_length);
-        }
         printf("Total runtime: %.2f seconds\n", end_time - start_time);
         printf("Number of iterations: %d\n", iteration);
 
@@ -144,20 +144,6 @@ int main(int argc, char *argv[])
 
 void initialize()
 {
-    // Read cities from file or generate random cities
-    // For simplicity, let's generate random cities within a square grid
-    // You may replace this with reading cities from a file or other methods
-
-    // Initialize random seed
-    // srand(time(NULL));
-
-    // // Initialize cities
-    // for (int i = 0; i < num_cities; i++)
-    // {
-    //     cities[i].x = rand() % 100; // Random x-coordinate
-    //     cities[i].y = rand() % 100; // Random y-coordinate
-    // }
-
     // Read city coordinates from file
     FILE *fp = fopen("cities.txt", "r");
     if (fp == NULL)
@@ -332,7 +318,7 @@ bool termination_condition_met()
 {
     // Implement your termination criterion here
     // For example, you could check if a maximum number of iterations has been reached
-    return (iteration >= max_iterations);
+    return (iteration >= max_iterations || repeat_count >= MAX_REPEAT_COUNT);
 }
 
 void terminate()
