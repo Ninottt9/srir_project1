@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     start_time = MPI_Wtime();
 
     // Main loop of ACO algorithm
-    while (true)
+    while (!termination_condition_met())
     {
         // Simulate ant movement
         ant_movement();
@@ -100,13 +100,13 @@ int main(int argc, char *argv[])
         }
 
         // Print intermediate output (optional)
-        if (rank == 0 && iteration % 100 == 0)
+        if (rank == 0 && iteration % 10 == 0)
         {
             printf("Iteration %d: Best tour length so far: %.2f\n", iteration, best_tour_length);
         }
 
         // Terminate if necessary
-        terminate();
+        // terminate();
 
         iteration++;
     }
