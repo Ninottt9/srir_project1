@@ -3,11 +3,12 @@
 #include <math.h>
 #include <stdbool.h>
 #include <time.h>
+#include <float.h>
 #include <mpi.h>
 
 // Define structures and global variables here
-#define MAX_CITIES 10000 // Maximum number of cities
-#define MAX_ANTS 1000    // Maximum number of ants
+#define MAX_CITIES 1000 // Maximum number of cities
+#define MAX_ANTS 100    // Maximum number of ants
 
 // Define structures
 typedef struct
@@ -27,8 +28,8 @@ double pheromones[MAX_CITIES][MAX_CITIES]; // Pheromone trails
 City cities[MAX_CITIES];                   // Array to hold cities
 Ant ants[MAX_ANTS];                        // Array to hold ants
 
-int num_cities; // Number of cities
-int num_ants;   // Number of ants
+int num_cities = 100; // Number of cities
+int num_ants = 10;   // Number of ants
 
 // Constants for ACO parameters
 #define ALPHA 1.0 // Pheromone importance
@@ -47,7 +48,10 @@ double distance(int city1, int city2);
 bool termination_condition_met();
 
 int iteration = 0;
-const int max_iterations = 1000000; // Maximum number of iterations (adjust as needed)
+const int max_iterations = 1000; // Maximum number of iterations (adjust as needed)
+
+// Define a global variable to store the best tour length found so far
+double best_tour_length = DBL_MAX;
 
 int main(int argc, char *argv[])
 {
@@ -75,6 +79,18 @@ int main(int argc, char *argv[])
 
         // Communicate pheromone updates
         communicate();
+
+        // Update best tour length found so far
+        for (int i = 0; i < num_ants; i++) {
+            if (ants[i].tour_length < best_tour_length) {
+                best_tour_length = ants[i].tour_length;
+            }
+        }
+
+        // Print intermediate output (optional)
+        if (rank == 0 && iteration % 10 == 0) {
+            printf("Iteration %d: Best tour length so far: %.2f\n", iteration, best_tour_length);
+        }
 
         // Terminate if necessary
         terminate();
