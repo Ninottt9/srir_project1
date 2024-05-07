@@ -25,11 +25,11 @@ typedef struct
 } Ant;
 
 double pheromones[MAX_CITIES][MAX_CITIES]; // Pheromone trails
-City cities[MAX_CITIES];                   // Array to hold cities
+City *cities;                   // Array to hold cities
 Ant ants[MAX_ANTS];                        // Array to hold ants
 
 int num_cities = 100; // Number of cities
-int num_ants = 10;   // Number of ants
+int num_ants = 10;    // Number of ants
 
 // Constants for ACO parameters
 #define ALPHA 1.0 // Pheromone importance
@@ -81,14 +81,17 @@ int main(int argc, char *argv[])
         communicate();
 
         // Update best tour length found so far
-        for (int i = 0; i < num_ants; i++) {
-            if (ants[i].tour_length < best_tour_length) {
+        for (int i = 0; i < num_ants; i++)
+        {
+            if (ants[i].tour_length < best_tour_length)
+            {
                 best_tour_length = ants[i].tour_length;
             }
         }
 
         // Print intermediate output (optional)
-        if (rank == 0 && iteration % 10 == 0) {
+        if (rank == 0 && iteration % 10 == 0)
+        {
             printf("Iteration %d: Best tour length so far: %.2f\n", iteration, best_tour_length);
         }
 
@@ -117,6 +120,22 @@ int main(int argc, char *argv[])
         }
         printf("Total runtime: %.2f seconds\n", end_time - start_time);
         printf("Number of iterations: %d\n", iteration);
+
+        // Write the best tour to a file
+        FILE *fp = fopen("output.txt", "w");
+        if (fp == NULL)
+        {
+            printf("Error: Unable to open file for writing.\n");
+            MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+        }
+        fprintf(fp, "%.2f\n", best_tour_length);
+        for (int i = 0; i < num_cities; i++)
+        {
+            fprintf(fp, "%d ", ants[0].tour[i]); // Assume first ant has the best tour
+        }
+        fprintf(fp, "\n");
+        fclose(fp);
+        printf("Best tour written to file: best_tour.txt\n");
     }
 
     MPI_Finalize();
@@ -130,14 +149,37 @@ void initialize()
     // You may replace this with reading cities from a file or other methods
 
     // Initialize random seed
-    srand(time(NULL));
+    // srand(time(NULL));
 
-    // Initialize cities
+    // // Initialize cities
+    // for (int i = 0; i < num_cities; i++)
+    // {
+    //     cities[i].x = rand() % 100; // Random x-coordinate
+    //     cities[i].y = rand() % 100; // Random y-coordinate
+    // }
+
+    // Read city coordinates from file
+    FILE *fp = fopen("cities.txt", "r");
+    if (fp == NULL)
+    {
+        printf("Error: Unable to open file for reading.\n");
+        exit(EXIT_FAILURE);
+    }
+    // Read number of cities
+    fscanf(fp, "%d", &num_cities);
+    // Allocate memory for city coordinates
+    cities = (City *)malloc(num_cities * sizeof(City));
+    if (cities == NULL)
+    {
+        printf("Error: Memory allocation failed.\n");
+        exit(EXIT_FAILURE);
+    }
+    // Read city coordinates
     for (int i = 0; i < num_cities; i++)
     {
-        cities[i].x = rand() % 100; // Random x-coordinate
-        cities[i].y = rand() % 100; // Random y-coordinate
+        fscanf(fp, "%lf %lf", &cities[i].x, &cities[i].y);
     }
+    fclose(fp);
 
     // Initialize pheromone trails
     for (int i = 0; i < num_cities; i++)
