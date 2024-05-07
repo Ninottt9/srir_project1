@@ -7,3 +7,6 @@
 ## First run
 Before running the code the environment has to be prepeared. (cuda and mpich have to activated and nodes file generated). To do that automatically use
 - `make before_compile`
+
+## Results
+The output plot of the best found route is saved in hte `output.png` file.
