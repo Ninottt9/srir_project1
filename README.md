@@ -9,7 +9,7 @@ And to generate the nodes file use
 
 ## Run
 - `make` to generate the cities data, compile the code and run it.
-- `make NUM_CITIES=<number of cities> NUM_ANTS=<number of ants>` to specify the number of cities, to be generated, default is **100** and the number of ants, default is **10**. Then it compiles the code and runs it.
+- `make NUM_CITIES=<number of cities> NUM_ANTS=<number of ants> MAX_ITERATIONS=<maximum number of iterations>` to specify the number of cities, to be generated, default is **100** and the number of ants, default is **10** and number of iterations, default is **10000**. Then it compiles the code and runs it.
 
 
 ## Results
