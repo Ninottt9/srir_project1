@@ -7,11 +7,11 @@
 #include <mpi.h>
 
 // Define structures and global variables here
-#define MAX_CITIES 10000          // Maximum number of cities
-#define MAX_ANTS 1000             // Maximum number of ants
-const int max_iterations = 10000; // Maximum number of iterations (adjust as needed)
-int num_cities = 100;             // fallvack value
-int num_ants = 10;                // fallback value
+#define MAX_CITIES 10000    // Maximum number of cities
+#define MAX_ANTS 1000       // Maximum number of ants
+int max_iterations = 10000; // Maximum number of iterations (adjust as needed)
+int num_cities = 100;       // fallvack value
+int num_ants = 10;          // fallback value
 int rank, size;
 
 // Define structures
@@ -47,12 +47,13 @@ double distance(int city1, int city2);
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
+    if (argc != 3)
     {
-        printf("Usage: %s <num_ants>\n", argv[0]);
+        printf("Usage: %s <num_ants> <num_iterations>\n", argv[0]);
         return EXIT_FAILURE;
     }
     num_ants = atoi(argv[1]);
+    max_iterations = atoi(argv[2]);
     double start_time, end_time;
     double best_tour_length = DBL_MAX;
     int best_tour[MAX_CITIES];

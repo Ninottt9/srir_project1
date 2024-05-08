@@ -3,6 +3,7 @@
 # Default value for NUM_CITIES
 NUM_CITIES ?= 100
 NUM_ANTS ?= 10
+MAX_ITERATIONS ?= 10000
 
 # Define variables
 STATION_SCRIPT := /opt/nfs/config/station204_name_list.sh
@@ -10,7 +11,7 @@ NODES_FILE := nodes
 
 # Define targets
 all: main generate_data
-	mpiexec -f $(NODES_FILE) -n $$(($(shell cat $(NODES_FILE) | wc -l) * 2)) ./main $(NUM_ANTS)
+	mpiexec -f $(NODES_FILE) -n $$(($(shell cat $(NODES_FILE) | wc -l) * 2)) ./main $(NUM_ANTS) $(MAX_ITERATIONS)
 	python3 plot.py
 
 main: main.c
