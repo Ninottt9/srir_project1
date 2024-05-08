@@ -9,7 +9,6 @@
 // Define structures and global variables here
 #define MAX_CITIES 10000 // Maximum number of cities
 #define MAX_ANTS 1000    // Maximum number of ants
-#define MAX_REPEAT_COUNT 10
 
 // Define structures
 typedef struct
@@ -49,11 +48,9 @@ double distance(int city1, int city2);
 bool termination_condition_met();
 
 int iteration = 0;
-const int max_iterations = 1000; // Maximum number of iterations (adjust as needed)
+const int max_iterations = 10000; // Maximum number of iterations (adjust as needed)
+int rank, size;
 
-// Define a global variable to store the best tour length found so far
-double best_tour_length = DBL_MAX;
-int repeat_count = 0;
 
 int main(int argc, char *argv[])
 {
@@ -63,8 +60,8 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
     num_ants = atoi(argv[1]);
-    int rank, size;
     double start_time, end_time;
+    double best_tour_length = DBL_MAX;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -81,15 +78,9 @@ int main(int argc, char *argv[])
     {
         // Simulate ant movement
         ant_movement();
-
         // Update pheromones
         update_pheromones();
-
-        // Communicate pheromone updates
-        communicate();
-
         // Update best tour length found so far
-        double prev_best_tour_length = best_tour_length;
         for (int i = 0; i < num_ants; i++)
         {
             if (ants[i].tour_length < best_tour_length)
@@ -98,23 +89,11 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (prev_best_tour_length - best_tour_length < 1e-6)
-        {
-            repeat_count++;
-        }
-        else
-        {
-            prev_best_tour_length = best_tour_length;
-        }
-
         // Print intermediate output (optional)
         if (rank == 0 && iteration % 10 == 0)
         {
             printf("Iteration %d: Best tour length so far: %.2f\n", iteration, best_tour_length);
         }
-
-        // Terminate if necessary
-        // terminate();
 
         iteration++;
     }
@@ -204,6 +183,8 @@ void ant_movement()
 {
     for (int i = 0; i < num_ants; i++)
     {
+        // Reset ant's tour, visited cities, and tour length
+        ants[i].tour_length = 0.0;
         // Reset ant's tour and visited cities
         for (int j = 0; j < num_cities; j++)
         {
@@ -236,7 +217,7 @@ int select_next_city(int ant_index, int current_city)
     int unvisited_count = 0;
     int unvisited_cities[num_cities];
 
-    // Calculate total probability
+    // Calculate total probability and identify unvisited cities
     for (int i = 0; i < num_cities; i++)
     {
         if (ants[ant_index].visited[i] == 0)
@@ -251,6 +232,12 @@ int select_next_city(int ant_index, int current_city)
         {
             probabilities[i] = 0.0; // Ant has visited this city already
         }
+    }
+
+    // If all cities have been visited, return the current city
+    if (unvisited_count == 0)
+    {
+        return current_city;
     }
 
     // Select next city based on probabilities
@@ -278,12 +265,12 @@ double distance(int city1, int city2)
 
 void update_pheromones()
 {
-    // Evaporate pheromones
+    // Evaporate pheromones locally
     for (int i = 0; i < num_cities; i++)
     {
         for (int j = 0; j < num_cities; j++)
         {
-            pheromones[i][j] *= (1.0 - RHO); // Evaporation
+            pheromones[i][j] *= (1.0 - RHO); // Local evaporation
             // Ensure pheromone values are within a certain range (optional)
             if (pheromones[i][j] < 0.0)
             {
@@ -296,7 +283,13 @@ void update_pheromones()
         }
     }
 
-    // Deposit pheromones by ants
+    // Allocate memory for the local pheromone matrix segment
+    double local_pheromones[num_cities][num_cities];
+
+    // Scatter the pheromones array among processes
+    MPI_Scatter(pheromones, num_cities * num_cities / size, MPI_DOUBLE, local_pheromones, num_cities * num_cities / size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    // Deposit pheromones locally by ants
     for (int i = 0; i < num_ants; i++)
     {
         double tour_length = ants[i].tour_length;
@@ -305,28 +298,24 @@ void update_pheromones()
         {
             int city1 = ants[i].tour[j];
             int city2 = ants[i].tour[j + 1];
-            // Update pheromone trail for this edge
-            pheromones[city1][city2] += Q / tour_length;
-            pheromones[city2][city1] += Q / tour_length; // Trails are symmetric
+            // Update local pheromone trail for this edge
+            local_pheromones[city1][city2] += Q / tour_length;
+            local_pheromones[city2][city1] += Q / tour_length; // Trails are symmetric
         }
-        // Update pheromone trail for the last edge back to the start city
-        pheromones[ants[i].tour[num_cities - 1]][ants[i].tour[0]] += Q / tour_length;
-        pheromones[ants[i].tour[0]][ants[i].tour[num_cities - 1]] += Q / tour_length; // Trails are symmetric
+        // Update local pheromone trail for the last edge back to the start city
+        local_pheromones[ants[i].tour[num_cities - 1]][ants[i].tour[0]] += Q / tour_length;
+        local_pheromones[ants[i].tour[0]][ants[i].tour[num_cities - 1]] += Q / tour_length; // Trails are symmetric
     }
-}
 
-void communicate()
-{
-    // Gather pheromone updates from all processes
-    MPI_Allreduce(MPI_IN_PLACE, pheromones, num_cities * num_cities, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    // Optionally, you can implement a local pheromone update scheme to avoid race conditions
+    // Gather updated local pheromones from all processes
+    MPI_Gather(local_pheromones, num_cities * num_cities / size, MPI_DOUBLE, pheromones, num_cities * num_cities / size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 bool termination_condition_met()
 {
     // Implement your termination criterion here
     // For example, you could check if a maximum number of iterations has been reached
-    return (iteration >= max_iterations || repeat_count >= MAX_REPEAT_COUNT);
+    return (iteration >= max_iterations);
 }
 
 void terminate()
