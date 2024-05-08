@@ -31,7 +31,7 @@ y.append(y[0])
 plt.plot(x, y,  linestyle='-', color='r', label='Best Tour', zorder=10)
 
 plt.annotate("start and finish", xy=(cities[tour[0]][0], cities[tour[0]][1]), xytext=(0, 0), size=15, color='g',
-            arrowprops=dict(facecolor='g', width=1))
+            arrowprops=dict(facecolor='g', width=1), zorder=20)
 # plt.text(, , "start and finish", color='g', size=20, zorder=20)
 
 for i in range(len(tour)-1):
