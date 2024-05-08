@@ -7,8 +7,12 @@
 #include <mpi.h>
 
 // Define structures and global variables here
-#define MAX_CITIES 10000 // Maximum number of cities
-#define MAX_ANTS 1000    // Maximum number of ants
+#define MAX_CITIES 10000          // Maximum number of cities
+#define MAX_ANTS 1000             // Maximum number of ants
+const int max_iterations = 10000; // Maximum number of iterations (adjust as needed)
+int num_cities = 100;             // fallvack value
+int num_ants = 10;                // fallback value
+int rank, size;
 
 // Define structures
 typedef struct
@@ -28,9 +32,6 @@ double pheromones[MAX_CITIES][MAX_CITIES]; // Pheromone trails
 City *cities;                              // Array to hold cities
 Ant ants[MAX_ANTS];                        // Array to hold ants
 
-int num_cities = 100; // fallvack value
-int num_ants = 10;    // fallback value
-
 // Constants for ACO parameters
 #define ALPHA 1.0 // Pheromone importance
 #define BETA 2.0  // Heuristic information importance
@@ -41,16 +42,8 @@ int num_ants = 10;    // fallback value
 void initialize();
 void ant_movement();
 void update_pheromones();
-void communicate();
-void terminate();
 int select_next_city(int ant_index, int current_city);
 double distance(int city1, int city2);
-bool termination_condition_met();
-
-int iteration = 0;
-const int max_iterations = 10000; // Maximum number of iterations (adjust as needed)
-int rank, size;
-
 
 int main(int argc, char *argv[])
 {
@@ -62,6 +55,7 @@ int main(int argc, char *argv[])
     num_ants = atoi(argv[1]);
     double start_time, end_time;
     double best_tour_length = DBL_MAX;
+    int best_tour[MAX_CITIES];
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -74,7 +68,7 @@ int main(int argc, char *argv[])
     start_time = MPI_Wtime();
 
     // Main loop of ACO algorithm
-    while (!termination_condition_met())
+    for (int iteration = 0; iteration < max_iterations; iteration++)
     {
         // Simulate ant movement
         ant_movement();
@@ -86,16 +80,18 @@ int main(int argc, char *argv[])
             if (ants[i].tour_length < best_tour_length)
             {
                 best_tour_length = ants[i].tour_length;
+                for (int j = 0; j < num_cities; j++)
+                {
+                    best_tour[j] = ants[i].tour[j];
+                }
             }
         }
 
         // Print intermediate output (optional)
-        if (rank == 0 && iteration % 10 == 0)
+        if (rank == 0 && iteration % 100 == 0)
         {
             printf("Iteration %d: Best tour length so far: %.2f\n", iteration, best_tour_length);
         }
-
-        iteration++;
     }
 
     // Stop timer
@@ -106,7 +102,7 @@ int main(int argc, char *argv[])
     {
         printf("Best tour found:\n");
         printf("Total runtime: %.2f seconds\n", end_time - start_time);
-        printf("Number of iterations: %d\n", iteration);
+        printf("Number of iterations: %d\n", max_iterations);
 
         // Write the best tour to a file
         FILE *fp = fopen("output.txt", "w");
@@ -118,7 +114,7 @@ int main(int argc, char *argv[])
         fprintf(fp, "%.2f\n", best_tour_length);
         for (int i = 0; i < num_cities; i++)
         {
-            fprintf(fp, "%d ", ants[0].tour[i]); // Assume first ant has the best tour
+            fprintf(fp, "%d ", best_tour[i]);
         }
         fprintf(fp, "\n");
         fclose(fp);
@@ -309,23 +305,4 @@ void update_pheromones()
 
     // Gather updated local pheromones from all processes
     MPI_Gather(local_pheromones, num_cities * num_cities / size, MPI_DOUBLE, pheromones, num_cities * num_cities / size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-}
-
-bool termination_condition_met()
-{
-    // Implement your termination criterion here
-    // For example, you could check if a maximum number of iterations has been reached
-    return (iteration >= max_iterations);
-}
-
-void terminate()
-{
-    // Implement the termination logic here
-    if (termination_condition_met())
-    {
-        // Terminate the algorithm
-        // Optionally, you can perform additional tasks before terminating
-        printf("Termination condition met. Algorithm terminated.\n");
-        exit(EXIT_SUCCESS);
-    }
 }
