@@ -1,4 +1,7 @@
-# Opis Projektu
+# Rozproszone rozwiązanie problemu komiwojażera (travelling salesman problem) - kolonia mrówek (ant colony)
+
+# Maksym Kazhaiev, Volodymyr Tymkiv
+
 
 ## Problem
 
@@ -91,3 +94,9 @@ Projekt uruchamia się za pomocą pliku Makefile. Plik zawiera następne argumen
 `generate_nodes`: Generuje listę węzłów na podstawie skryptu stacji.
 
 W pliku można zainicjalizować zmienne globalne `NUM_CITIES` dla ilości węzłow w grafie oraz `NUM_ANTS`. 
+
+`1MAX_ITERAЕIONS` : ustawinie ilości iteracji w programie
+
+## Schemat blokowy
+
+![image info](image.png)
